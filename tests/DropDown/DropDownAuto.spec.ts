@@ -89,7 +89,7 @@ These 3 should be selected; "Python" should NOT be selected |
  all others unselected |
 | 29 | Verify the "Selected:" text after choosing 2 or more options |
  should show all chosen values (check the format on page) | */
- test.only("3. Multi-Select Validation",async({page})=>
+ test("3. Multi-Select Validation",async({page})=>
 {
     const multiSelectDD = page.locator("#multi-select");
     await expect(multiSelectDD).toHaveAttribute("multiple");
@@ -113,5 +113,39 @@ These 3 should be selected; "Python" should NOT be selected |
     await expect( multiSelectDD).toHaveValues(["csharp"]);
     await multiSelectDD.selectOption([{label:"C#"},{label:"Java"}]);
     await expect(textBelowDD).toHaveText("Selected: java, csharp");
+})
+/* 4. Custom Div Dropdown Validation
+
+| S.No | Steps | Expected Result |
+|---|---|---|
+| 30 | Locate the custom div dropdown | Dropdown should be visible |
+| 31 | Verify the default text of the dropdown | Should show "Choose..." |
+| 32 | Verify the text below the dropdown on page load | Should show "Selected: Choose..." |
+| 33 | Verify the option list before clicking | Option list should NOT be visible (check on page) |
+| 34 | Click on the dropdown | Option list should open and be visible |
+| 35 | Count and read all options | Options should be visible (check the count and texts on page) |
+| 36 | Click on one option | Dropdown text should change to the chosen option |
+| 37 | Verify the "Selected:" text | Text should show the chosen option (check on page) |
+| 38 | Verify the option list after choosing | Option list should close (check on page) |
+| 39 | Open the dropdown again and choose a different option | New option should be selected; the text should update |
+| 40 | Open the dropdown and click outside it | List should close, if implemented (check on page) | */
+test.only("4. Custom Div Dropdown Validation",async({page})=>
+{
+    const customDD = page.getByTestId("custom-dropdown-menu");
+    const chooseBtn = page.locator("#custom-dropdown-toggle");
+    await expect(chooseBtn).toHaveText("Choose...");
+    let textBelowDD = page.getByTestId("custom-dropdown-result");
+    await expect(textBelowDD).toHaveText("Selected: Choose...");
+    await expect(customDD).not.toBeVisible();
+    chooseBtn.click();
+    await expect(customDD).toBeVisible();
+    await expect(customDD.locator("li")).toHaveCount(3);
+    console.log(await customDD.locator("li").allTextContents());
+    await customDD.locator("li", {hasText:"Alpha"}).click();
+    await expect(textBelowDD).toHaveText("Selected: Alpha");
+    await expect(customDD).not.toBeVisible();
+    await chooseBtn.click();
+    await customDD.locator("li:has-text('Gamma')").click();
+    await expect(textBelowDD).toHaveText("Selected: Gamma");
 })
 });
