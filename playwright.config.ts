@@ -9,6 +9,12 @@ import { defineConfig, devices } from '@playwright/test';
 // dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
+ * Slow-motion delay in milliseconds, read from the SLOW environment variable.
+ * Not set -> normal speed. SLOW=1000 -> 1 second between actions.
+ */
+const slowMo = Number(process.env.SLOW) || 0;
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -30,6 +36,12 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* When SLOW is set, open a visible browser and pause between actions */
+    headless: slowMo === 0,
+    launchOptions: {
+      slowMo,
+    },
   },
 
   /* Configure projects for major browsers */

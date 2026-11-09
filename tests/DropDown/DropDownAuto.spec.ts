@@ -129,7 +129,7 @@ These 3 should be selected; "Python" should NOT be selected |
 | 38 | Verify the option list after choosing | Option list should close (check on page) |
 | 39 | Open the dropdown again and choose a different option | New option should be selected; the text should update |
 | 40 | Open the dropdown and click outside it | List should close, if implemented (check on page) | */
-test.only("4. Custom Div Dropdown Validation",async({page})=>
+test("4. Custom Div Dropdown Validation",async({page})=>
 {
     const customDD = page.getByTestId("custom-dropdown-menu");
     const chooseBtn = page.locator("#custom-dropdown-toggle");
@@ -147,5 +147,38 @@ test.only("4. Custom Div Dropdown Validation",async({page})=>
     await chooseBtn.click();
     await customDD.locator("li:has-text('Gamma')").click();
     await expect(textBelowDD).toHaveText("Selected: Gamma");
+})
+/* 5. Select Populated from State Array Validation
+
+| S.No | Steps | Expected Result |
+|---|---|---|
+| 41 | Locate the select | Dropdown should be visible & enabled |
+| 42 | Verify the default selected option | "choose tool…" should be shown |
+| 43 | Verify the text below the dropdown on page load | Should show "Selected: none" |
+| 44 | Count all options | There should be 5 options (choose tool…, Selenium, Playwright, Cypress, Appium) |
+| 45 | Verify the option texts and order | "choose tool…", "Selenium", "Playwright", "Cypress", "Appium" |
+| 46 | Select "Playwright" by visible text | "Playwright" should be selected |
+| 47 | Verify the "Selected:" text | Text should show "Playwright" (check on page) |
+| 48 | Select "Appium" by index (index 4) | "Appium" should be selected; the text should update |
+| 49 | Select "Selenium", then "Cypress" | Only "Cypress" should be selected at the end |
+ */
+test.only("5. Select Populated from State Array Validation", async({page})=>
+{
+    const selectDD = page.locator(".input-field.practice-select").last();
+    await expect(selectDD).toBeVisible();
+    await expect(selectDD).toBeEnabled();
+    await expect(selectDD.locator("option:checked")).toHaveText("choose tool…");
+    let textBelowDD = page.getByTestId("dynamic-select-result");
+    await expect(textBelowDD).toHaveText("Selected: none");
+    const allOptions = selectDD.locator("option");
+    await expect(allOptions).toHaveCount(5);
+    console.log(await allOptions.allTextContents());
+    await selectDD.selectOption({label:"Playwright"});
+    await expect(selectDD.locator("option:checked")).toHaveText("Playwright");
+    await expect(textBelowDD).toHaveText("Selected: Playwright");
+    await selectDD.selectOption({index:4});
+    await expect(textBelowDD).toHaveText("Selected: Appium");
+    await selectDD.selectOption({label:"Selenium"});
+    await selectDD.selectOption(["Cypress"]);
 })
 });
