@@ -68,4 +68,50 @@ test.describe("Automation Practice Playground", () => {
     await expect(textBelowDD).toHaveText("Selected: none");
     await expect(ss).not.toHaveAttribute("multiple");
   });
+  /* 3. Multi-Select Validation
+
+| S.No | Steps | Expected Result |
+|---|---|---|
+| 17 | Locate the multi-select | Dropdown should be visible & enabled |
+| 18 | Check the `multiple` attribute | Attribute should be present |
+| 19 | Count all options | There should be 4 options |
+| 20 | Verify the option texts | "Java", "Python", "JavaScript", "C#" |
+| 21 | Verify that nothing is selected on page load | No option should be selected |
+| 22 | Verify the text below the multi-select on page load | Should show "Selected: none" |
+| 23 | Select "Java" | "Java" should be selected |
+| 24 | Select "Java" and "Python" (Ctrl/Cmd + click) | Both should be selected |
+| 25 | Select "Java", "JavaScript" and "C#" | 
+These 3 should be selected; "Python" should NOT be selected |
+| 26 | Select all 4 options | All 4 should be selected |
+| 27 | Deselect "Python" (Ctrl/Cmd + click) | 
+"Python" unselected; the other 3 stay selected |
+| 28 | Click "C#" without Ctrl/Cmd | Only "C#" should be selected;
+ all others unselected |
+| 29 | Verify the "Selected:" text after choosing 2 or more options |
+ should show all chosen values (check the format on page) | */
+ test.only("3. Multi-Select Validation",async({page})=>
+{
+    const multiSelectDD = page.locator("#multi-select");
+    await expect(multiSelectDD).toHaveAttribute("multiple");
+     expect(await multiSelectDD.locator("option").count()).toEqual(4);
+     console.log(await multiSelectDD.locator("option").allTextContents());
+     expect(await multiSelectDD.locator("option").allTextContents()).toEqual(["Java", "Python", "JavaScript", "C#"]);
+    expect(await multiSelectDD.locator("option:checked").count()).toEqual(0);
+    let textBelowDD = page.getByTestId("multi-select-result"); 
+    await expect(textBelowDD).toHaveText("Selected: none");  
+    await multiSelectDD.selectOption({label:"Java"});  
+    await expect(textBelowDD).toHaveText("Selected: java");
+    await multiSelectDD.selectOption(["Java","Python"]);
+    await expect(textBelowDD).toHaveText("Selected: java, python");
+    await multiSelectDD.selectOption([{label:"Java"}, {label:"Python"},{label:"C#"}]);
+     expect( await multiSelectDD.locator("option:checked").allTextContents()).toEqual(["Java", "Python", "C#"]);
+     await expect( multiSelectDD.locator("option:checked",{hasText: "Python"})).not.toHaveCount(0);
+     multiSelectDD.selectOption(["Java", "Python", "JavaScript", "C#"]);
+     await expect(textBelowDD).toHaveText("Selected: java, python, javascript, csharp");
+     await multiSelectDD.locator("option",{hasText:"Python"}).click({modifiers:["ControlOrMeta"]});
+    await multiSelectDD.selectOption("csharp");
+    await expect( multiSelectDD).toHaveValues(["csharp"]);
+    await multiSelectDD.selectOption([{label:"C#"},{label:"Java"}]);
+    await expect(textBelowDD).toHaveText("Selected: java, csharp");
+})
 });
