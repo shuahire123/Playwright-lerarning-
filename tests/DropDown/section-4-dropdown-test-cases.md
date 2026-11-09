@@ -11,7 +11,7 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 3. Custom div dropdown (trigger text: "Choose...")
 4. Select populated from state array (options: choose tool…, Selenium, Playwright, Cypress, Appium)
 
-> **Note:** These test cases are based on the page text only. I could not see the HTML. Exact `id`, `value` attributes, the options of the custom div dropdown, and the exact "Selected:" text after a choice are not known. Where the result depends on the real page, it is marked **(check on page)**. Open DevTools (F12) and check first.
+> **Note:** The exact IDs, option values and result formats below have been checked against the live page. The Playwright tests use `data-testid` locators so they do not depend on CSS classes.
 
 ---
 
@@ -36,11 +36,11 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 | 8 | Count all options | There should be 4 options (choose…, Red, Green, Blue) |
 | 9 | Verify the option texts | "choose…", "Red", "Green", "Blue" |
 | 10 | Select "Red" by visible text | "Red" should be selected |
-| 11 | Verify the "Selected:" text | Text should show the Red choice (check on page) |
-| 12 | Select "Green" by value | "Green" should be selected (check the `value` on page) |
+| 11 | Verify the "Selected:" text | Text should be `Selected: red` (the page shows the lowercase option value) |
+| 12 | Select "Green" by value | The select `value` should be `green` |
 | 13 | Select "Blue" by index (index 3) | "Blue" should be selected |
 | 14 | Change the selection from "Red" to "Blue" | Only "Blue" should be selected; the text should update |
-| 15 | Select "choose…" again | Dropdown shows "choose…"; check if text goes back to "Selected: none" (check on page) |
+| 15 | Select "choose…" again | Dropdown shows "choose…"; the result goes back to `Selected: none` |
 | 16 | Check that the select does not have the `multiple` attribute | Only one option can be selected at a time |
 
 ---
@@ -61,7 +61,7 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 | 26 | Select all 4 options | All 4 should be selected |
 | 27 | Deselect "Python" (Ctrl/Cmd + click) | "Python" unselected; the other 3 stay selected |
 | 28 | Click "C#" without Ctrl/Cmd | Only "C#" should be selected; all others unselected |
-| 29 | Verify the "Selected:" text after choosing 2 or more options | Text should show all chosen values (check the format on page) |
+| 29 | Verify the "Selected:" text after choosing 2 or more options | Format: `Selected: java, python` — lowercase values, comma + space, in option order |
 
 ---
 
@@ -72,14 +72,14 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 | 30 | Locate the custom div dropdown | Dropdown should be visible |
 | 31 | Verify the default text of the dropdown | Should show "Choose..." |
 | 32 | Verify the text below the dropdown on page load | Should show "Selected: Choose..." |
-| 33 | Verify the option list before clicking | Option list should NOT be visible (check on page) |
+| 33 | Verify the option list before clicking | Option list should NOT be visible (it is not rendered while closed) |
 | 34 | Click on the dropdown | Option list should open and be visible |
-| 35 | Count and read all options | Options should be visible (check the count and texts on page) |
-| 36 | Click on one option | Dropdown text should change to the chosen option |
-| 37 | Verify the "Selected:" text | Text should show the chosen option (check on page) |
-| 38 | Verify the option list after choosing | Option list should close (check on page) |
-| 39 | Open the dropdown again and choose a different option | New option should be selected; the text should update |
-| 40 | Open the dropdown and click outside it | List should close, if implemented (check on page) |
+| 35 | Count and read all options | 3 options: `Alpha`, `Beta`, `Gamma` |
+| 36 | Click on one option | The toggle button text changes to the chosen option (e.g. `Alpha`) |
+| 37 | Verify the "Selected:" text | Text should be `Selected: Alpha` |
+| 38 | Verify the option list after choosing | Menu closes after a selection |
+| 39 | Open the dropdown again and choose a different option | New option should be selected; the button and result text should update |
+| 40 | Open the dropdown and click outside it | Not implemented: the menu stays open on outside click. Covered by an expected-failure test |
 
 ---
 
@@ -93,7 +93,7 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 | 44 | Count all options | There should be 5 options (choose tool…, Selenium, Playwright, Cypress, Appium) |
 | 45 | Verify the option texts and order | "choose tool…", "Selenium", "Playwright", "Cypress", "Appium" |
 | 46 | Select "Playwright" by visible text | "Playwright" should be selected |
-| 47 | Verify the "Selected:" text | Text should show "Playwright" (check on page) |
+| 47 | Verify the "Selected:" text | Text should be `Selected: Playwright` |
 | 48 | Select "Appium" by index (index 4) | "Appium" should be selected; the text should update |
 | 49 | Select "Selenium", then "Cypress" | Only "Cypress" should be selected at the end |
 
@@ -108,7 +108,7 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 | 52 | Refresh the page after choosing values | All 4 dropdowns should go back to the default state |
 | 53 | Focus the standard select and press the Arrow Down key | Next option should be selected (browser behaviour) |
 | 54 | Choose the same option two times in the standard select | Option stays selected; no error |
-| 55 | Verify the "Selected:" text spelling and case for each choice | Text should match the option text exactly (check on page) |
+| 55 | Verify the "Selected:" text spelling and case for each choice | Standard/multi-select show lowercase values (`Red` → `red`, `C#` → `csharp`); custom/dynamic show the visible label |
 
 ---
 
@@ -116,7 +116,10 @@ The section has 4 dropdowns. Each one has its own test case group, so you can wr
 
 - **Remember this:** One dropdown = one test group. If a dropdown fails, you know which one.
 - In Playwright, `selectOption` works only for real `<select>` elements (standard, multi-select and state select). The custom div dropdown is not a `<select>`. You must click it, then click the option.
-- Every element has `data-testid`. Check the real values in DevTools before you use `getByTestId`.
+- Every element has `data-testid`. The custom options use `custom-option-alpha`, `custom-option-beta` and `custom-option-gamma`.
+- For a multi-select, `selectOption` **replaces** the whole selection. Use Ctrl/Cmd + click when the test needs to add or remove one option.
+- Standard and multi-select result text shows option **values** (lowercase); the custom and dynamic dropdowns show the visible label.
+- The custom dropdown closes only when the toggle is clicked again or an option is selected. It does not close on outside click.
 
 ---
 
