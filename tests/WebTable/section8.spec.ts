@@ -210,4 +210,166 @@ test("4. Sorting Validation", async ({ page }) => {
   await expect(sortBtn).toHaveText("Sort Name (asc)");
   await expectRows(ascPage1);
 });
+/* 5. Search (Filter) Validation
+
+| S.No | Steps | Expected Result |
+|---|---|---|
+| 32 | Locate the search box | Box should be visible & enabled |
+| 33 | Verify the search box is empty on page load | Value should be empty |
+| 34 | Enter "Anita" in the search box | Only the row "Anita" should be shown |
+| 35 | Enter "anita" (small letters) | Same row should be shown, if search is not case-sensitive (check on page) |
+| 36 | Enter "ANITA" (capital letters) | Same row should be shown, if search is not case-sensitive (check on page) |
+| 37 | Enter "Ani" (part of a name) | Row "Anita" should be shown |
+| 38 | Enter "QA" (a department) | Rows with "QA" should be shown, if search checks all columns (check on page) |
+| 39 | Enter "SDET" (a role) | Row with role "SDET" should be shown, if search checks all columns (check on page) |
+| 40 | Enter "12,00,000" (a salary) | Matching row should be shown, if search checks the Salary column (check on page) |
+| 41 | Enter a text with no match, like "xyz123" | No rows should be shown; a "No data" message may appear (check on page) |
+| 42 | Clear the search box after a search | All rows should come back |
+| 43 | Enter text with spaces at the start and end, like " Anita " | Result should be clear: either match or no match (check on page) |
+| 44 | Enter special characters "@#$%" | No rows shown; no error on the page |
+| 45 | Search with a name from page 2 or page 3 | Row should be shown, if search checks all pages (check on page) |
+| 46 | Verify the pagination text after a search | "Page x of y" should update to match the result (check on page) |
+| 47 | Verify the row count after a search | Rows shown should match the rows that have the search text | */
+test("5. Search (Filter) Validation", async ({ page }) => {
+  const table = page.getByTestId("practice-table");
+  const searchBox = page.getByTestId("table-search");
+  const rows = table.locator("tbody tr");
+  const nameCells = table.locator("tbody tr td:nth-child(1)");
+  const indicator = page.getByTestId("page-indicator");
+  const prevBtn = page.locator("#prev-page-btn");
+  const nextBtn = page.locator("#next-page-btn");
+
+  // #32, #33 - search box is visible, enabled and empty on load
+  await expect(searchBox).toBeVisible();
+  await expect(searchBox).toBeEnabled();
+  await expect(searchBox).toHaveValue("");
+
+  // #34, #35, #36, #37 - exact, case-insensitive and partial name matches
+  for (const term of ["Anita", "anita", "ANITA", "Ani"]) {
+    await searchBox.fill(term);
+    await expect(rows).toHaveCount(1);
+    await expect(nameCells).toHaveText(["Anita"]);
+  }
+
+  // #45 - search checks all pages: "an" also matches Farhan (page 2)
+  await searchBox.fill("an");
+  await expect(nameCells).toHaveText(["Anita", "Farhan"]);
+  await expect(indicator).toHaveText("Page 1 of 1");
+
+  // #38, #39, #40, #41, #44 - the filter only checks the Name column,
+  // so department, role, salary and special characters return no rows.
+  for (const term of ["QA", "SDET", "12,00,000", "xyz123", "cyx", "@#$%"]) {
+    await searchBox.fill(term);
+    await expect(rows).toHaveCount(1);
+    await expect(rows).toHaveText("No matching rows");
+  }
+
+  // #43 - leading/trailing spaces are not trimmed on this page
+  await searchBox.fill(" Anita ");
+  await expect(rows).toHaveText("No matching rows");
+
+  // #42 - clearing the search brings all page 1 rows back
+  await searchBox.clear();
+  await expect(rows).toHaveCount(3);
+  await expect(nameCells).toHaveText(["Anita", "Bharath", "Chitra"]);
+  await expect(indicator).toHaveText("Page 1 of 3");
+  await expect(prevBtn).toBeDisabled();
+  await expect(nextBtn).toBeEnabled();
+
+  // #45, #46, #47 - a page-3 name is found; search results fit on one page
+  await searchBox.fill("harish");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.locator("td")).toHaveText([
+    "Harish",
+    "DevOps",
+    "Platform",
+    "15,50,000",
+  ]);
+  await expect(indicator).toHaveText("Page 1 of 1");
+  await expect(prevBtn).toBeDisabled();
+  await expect(nextBtn).toBeDisabled();
+});
+/* 6. Pagination Validation
+
+| S.No | Steps | Expected Result |
+|---|---|---|
+| 48 | Verify the pagination text on page load | Should show "Page 1 of 3" |
+| 49 | Locate the Prev and Next buttons | Both should be visible |
+| 50 | Verify the Prev button on page 1 | Prev should be disabled |
+| 51 | Verify the Next button on page 1 | Next should be enabled |
+| 52 | Click Next | Text should show "Page 2 of 3" |
+| 53 | Verify the rows on page 2 | There should be 3 rows, and they should be different from page 1 |
+| 54 | Verify the Prev button on page 2 | Prev should be enabled |
+| 55 | Click Next again | Text should show "Page 3 of 3" |
+| 56 | Verify the rows on page 3 | Rows should be different from page 1 and page 2 |
+| 57 | Verify the Next button on page 3 | Next should be disabled |
+| 58 | Click Prev from page 3 | Text should show "Page 2 of 3", and the page 2 rows should be shown again |
+| 59 | Click Prev until page 1 | Text should show "Page 1 of 3"; Prev should be disabled |
+| 60 | Read the data of all 3 pages and count the rows | Total rows should be 9 (3 rows x 3 pages), if every page has 3 rows (check on page) |
+| 61 | Verify that no row is repeated across pages | Every row should appear only once |
+| 62 | Click Next and Prev quickly many times | Page text and rows should always match each other |
+| 63 | Click Prev on page 1 or Next on page 3 (if the button is clickable) | Page should not change; no error | */
+test("6. Pagination Validation", async ({ page }) => {
+  const indicator = page.getByTestId("page-indicator");
+  const prevBtn = page.locator("#prev-page-btn");
+  const nextBtn = page.locator("#next-page-btn");
+  const rows = page.getByTestId("practice-table").locator("tbody tr");
+
+  // #48, #49, #50, #51 - page 1 state
+  await expect(indicator).toHaveText("Page 1 of 3");
+  await expect(prevBtn).toBeVisible();
+  await expect(nextBtn).toBeVisible();
+  await expect(prevBtn).toBeDisabled();
+  await expect(nextBtn).toBeEnabled();
+  const page1 = await rows.allTextContents();
+
+  // #52, #53, #54 - page 2 has 3 different rows; both buttons enabled
+  await nextBtn.click();
+  await expect(indicator).toHaveText("Page 2 of 3");
+  await expect(prevBtn).toBeEnabled();
+  await expect(nextBtn).toBeEnabled();
+  const page2 = await rows.allTextContents();
+  expect(page1).toHaveLength(3);
+  expect(page2).toHaveLength(3);
+  expect(page2).not.toEqual(page1);
+
+  // #55, #56, #57 - page 3 has only 2 rows and Next is disabled
+  await nextBtn.click();
+  await expect(indicator).toHaveText("Page 3 of 3");
+  const page3 = await rows.allTextContents();
+  await expect(nextBtn).toBeDisabled();
+  expect(page3).toHaveLength(2);
+  expect(page3).not.toEqual(page1);
+  expect(page3).not.toEqual(page2);
+
+  // #58, #59 - go back to page 1 with Prev; rows match each page
+  await prevBtn.click();
+  await expect(indicator).toHaveText("Page 2 of 3");
+  await expect(rows).toHaveText(page2);
+  await prevBtn.click();
+  await expect(indicator).toHaveText("Page 1 of 3");
+  await expect(rows).toHaveText(page1);
+  await expect(prevBtn).toBeDisabled();
+
+  // #60, #61 - 3 + 3 + 2 = 8 rows, and every row appears only once
+  const allRows = [...page1, ...page2, ...page3];
+  expect(allRows).toHaveLength(8);
+  expect(new Set(allRows).size).toBe(8);
+
+  // #62 - rapid navigation keeps indicator, rows and buttons in sync
+  await nextBtn.click();
+  await nextBtn.click();
+  await prevBtn.click();
+  await nextBtn.click();
+  await expect(indicator).toHaveText("Page 3 of 3");
+  await expect(rows).toHaveText(page3);
+  await expect(nextBtn).toBeDisabled();
+
+  // #63 - Prev on page 1 is disabled and cannot change the page
+  await prevBtn.click();
+  await prevBtn.click();
+  await expect(indicator).toHaveText("Page 1 of 3");
+  await expect(rows).toHaveText(page1);
+  await expect(prevBtn).toBeDisabled();
+});
 
